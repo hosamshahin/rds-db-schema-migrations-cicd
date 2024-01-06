@@ -46,10 +46,10 @@ export class DatabaseStack extends Construct {
     });
 
     // Configure automatic secrets rotation
-    cluster.addRotationSingleUser({
-      automaticallyAfter: cdk.Duration.days(7),
-      excludeCharacters: '!@#$%^&*',
-    });
+    // cluster.addRotationSingleUser({
+    //   automaticallyAfter: cdk.Duration.days(7),
+    //   excludeCharacters: '!@#$%^&*',
+    // });
 
     // Setup bastion server to connect from local machine - only dev environment.
     if (stageName === 'dev') {
