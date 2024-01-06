@@ -20,40 +20,51 @@ export class CdkpipelinesStack extends Stack {
       config['githubBranch'],
       { connectionArn })
 
+    const codeBuildStep = new CodeBuildStep('Synth', {
+      input,
+      env: {
+        'CDK_DEVELOPMENT_ACCOUNT': accounts['CICD_ACCOUNT_ID'],
+        'CDK_PRODUCTION_ACCOUNT': accounts['PRD_ACCOUNT_ID'],
+        'REPOSITORY_NAME': config['githubRepo'],
+        'BRANCH': config['githubBranch'],
+      },
+      commands: [
+        'npm ci',
+        'npm run build',
+        'npm install lib/lambda',
+        'npx cdk synth',
+      ],
+      buildEnvironment: {
+        privileged: true // required for the lambda-nodejs module
+      },
+      rolePolicyStatements: [
+        new iam.PolicyStatement({
+          effect: iam.Effect.ALLOW,
+          actions: ['ec2:DescribeAvailabilityZones'],
+          resources: ['*']
+        }),
+        new iam.PolicyStatement({
+          effect: iam.Effect.ALLOW,
+          actions: ['sts:AssumeRole'],
+          resources: [`arn:aws:iam::${accounts['PRD_ACCOUNT_ID']}:role/cdk-hnb659fds-lookup-role-${accounts['PRD_ACCOUNT_ID']}-${config['region']}`]
+        }),
+        new iam.PolicyStatement({
+          actions: ['sts:AssumeRole'],
+          resources: [
+            `arn:aws:iam::${accounts['PRD_ACCOUNT_ID']}:role/admin-role-from-cicd-account`
+          ],
+        }),
+      ]
+    })
+
+    let cfnRole = (codeBuildStep.project.role as iam.Role).node.defaultChild as iam.CfnRole;
+    cfnRole.addPropertyOverride('RoleName', 'RDSSchemaMigrationPipelineSynthRole');
+
     const pipeline = new CodePipeline(this, 'Pipeline', {
       pipelineName: 'RDSSchemaMigrationDemo',
       crossAccountKeys: true,
       selfMutation: false,
-      synth: new CodeBuildStep('Synth', {
-        input,
-        env: {
-          'CDK_DEVELOPMENT_ACCOUNT': accounts['CICD_ACCOUNT_ID'],
-          'CDK_PRODUCTION_ACCOUNT': accounts['PRD_ACCOUNT_ID'],
-          'REPOSITORY_NAME': config['githubRepo'],
-          'BRANCH': config['githubBranch'],
-        },
-        commands: [
-          'npm ci',
-          'npm run build',
-          'npm install lib/lambda',
-          'npx cdk synth',
-        ],
-        buildEnvironment: {
-          privileged: true // required for the lambda-nodejs module
-        },
-        rolePolicyStatements: [
-          new iam.PolicyStatement({
-            effect: iam.Effect.ALLOW,
-            actions: ['ec2:DescribeAvailabilityZones'],
-            resources: ['*']
-          }),
-          new iam.PolicyStatement({
-            effect: iam.Effect.ALLOW,
-            actions: ['sts:AssumeRole'],
-            resources: [`arn:aws:iam::${accounts['PRD_ACCOUNT_ID']}:role/cdk-hnb659fds-lookup-role-${accounts['PRD_ACCOUNT_ID']}-${config['region']}`]
-          })
-        ]
-      })
+      synth: codeBuildStep
     });
 
     // development stage
