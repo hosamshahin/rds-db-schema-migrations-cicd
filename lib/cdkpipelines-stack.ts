@@ -32,7 +32,6 @@ export class CdkpipelinesStack extends cdk.Stack {
       commands: [
         'npm ci',
         'npm run build',
-        'npm install lib/lambda',
         'npx cdk synth',
       ],
       buildEnvironment: {
