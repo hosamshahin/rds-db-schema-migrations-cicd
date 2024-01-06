@@ -39,8 +39,8 @@ export class DatabaseStack extends Construct {
       ],
       defaultDatabaseName: this.defaultDBName,
       scaling: {
-        minCapacity: rds.AuroraCapacityUnit.ACU_1,
-        maxCapacity: rds.AuroraCapacityUnit.ACU_2
+        minCapacity: rds.AuroraCapacityUnit.ACU_2,
+        maxCapacity: rds.AuroraCapacityUnit.ACU_4
       },
       credentials: rds.Credentials.fromGeneratedSecret('syscdk'),
     });
@@ -52,7 +52,7 @@ export class DatabaseStack extends Construct {
     });
 
     // Setup bastion server to connect from local machine - only dev environment.
-    if (stageName === 'Development') {
+    if (stageName === 'dev') {
       new ec2.BastionHostLinux(this, 'BastionHost', {
         vpc: this.vpc
       });
