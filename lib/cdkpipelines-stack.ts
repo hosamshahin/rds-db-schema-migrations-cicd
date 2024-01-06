@@ -32,7 +32,7 @@ export class CdkpipelinesStack extends cdk.Stack {
       commands: [
         'npm ci',
         'npm run build',
-        'npx cdk synth',
+        'npx cdk synth -c TargetStack=CdkpipelinesStack'
       ],
       buildEnvironment: {
         privileged: true // required for the lambda-nodejs module
