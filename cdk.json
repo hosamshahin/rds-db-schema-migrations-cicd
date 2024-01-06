@@ -14,6 +14,19 @@
     "@aws-cdk/aws-rds:lowercaseDbIdentifier": true,
     "@aws-cdk/aws-efs:defaultEncryptionAtRest": true,
     "@aws-cdk/aws-lambda:recognizeVersionProps": true,
-    "@aws-cdk/aws-cloudfront:defaultSecurityPolicyTLSv1.2_2021": true
+    "@aws-cdk/aws-cloudfront:defaultSecurityPolicyTLSv1.2_2021": true,
+    "config": {
+      "githubOrg": "hosamshahin",
+      "githubRepo": "rds-db-schema-migrations-cicd",
+      "githubBranch": "main",
+      "region": "us-east-1",
+      "connection_arn": "arn:aws:codestar-connections:us-east-1:690901106489:connection/947df6a7-dcd6-4c05-a53c-1173466436d3",
+      "accounts": {
+        "CICD_ACCOUNT_ID": "690901106489",
+        "DEV_ACCOUNT_ID": "864571753663",
+        "STG_ACCOUNT_ID": "787236266800",
+        "PRD_ACCOUNT_ID": "938711853848"
+      }
+    }
   }
 }
