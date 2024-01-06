@@ -272,7 +272,6 @@ Resources:
               Configuration:
                 ProjectName:
                   Ref: PipelineBuildSynthCdkBuildProject6BEFA8E6
-                EnvironmentVariables: '[{"name":"_PROJECT_CONFIG_HASH","type":"PLAINTEXT","value":"1322766238ed9e5ba1e2f3cdd4dd0defdb927d7cc1249772757ab1dfbeac97f1"}]'
               InputArtifacts:
                 - Name: hosamshahin_rds_db_schema_migrations_cicd_Source
               Name: Synth
@@ -284,25 +283,6 @@ Resources:
                   - Arn
               RunOrder: 1
           Name: Build
-        - Actions:
-            - ActionTypeId:
-                Category: Build
-                Owner: AWS
-                Provider: CodeBuild
-                Version: "1"
-              Configuration:
-                ProjectName:
-                  Ref: PipelineUpdatePipelineSelfMutationDAA41400
-                EnvironmentVariables: '[{"name":"_PROJECT_CONFIG_HASH","type":"PLAINTEXT","value":"1dd1385f7cb7040460f1e563cd45f030b66107dc0a5f88fbe7bbfd716f066d37"}]'
-              InputArtifacts:
-                - Name: Synth_Output
-              Name: SelfMutate
-              RoleArn:
-                Fn::GetAtt:
-                  - PipelineCodeBuildActionRole226DB0CB
-                  - Arn
-              RunOrder: 1
-          Name: UpdatePipeline
         - Actions:
             - ActionTypeId:
                 Category: Build
@@ -601,6 +581,9 @@ Resources:
                   - :codebuild:us-east-1:690901106489:report-group/
                   - Ref: PipelineBuildSynthCdkBuildProject6BEFA8E6
                   - -*
+          - Action: ec2:DescribeAvailabilityZones
+            Effect: Allow
+            Resource: "*"
           - Action:
               - s3:GetObject*
               - s3:GetBucket*
@@ -1044,15 +1027,6 @@ Resources:
             Effect: Allow
             Resource:
               Fn::GetAtt:
-                - PipelineUpdatePipelineSelfMutationDAA41400
-                - Arn
-          - Action:
-              - codebuild:BatchGetBuilds
-              - codebuild:StartBuild
-              - codebuild:StopBuild
-            Effect: Allow
-            Resource:
-              Fn::GetAtt:
                 - PipelineAssetsFileAsset185A67CB4
                 - Arn
           - Action:
@@ -1079,154 +1053,6 @@ Resources:
         - Ref: PipelineCodeBuildActionRole226DB0CB
     Metadata:
       aws:cdk:path: CdkpipelinesStack/Pipeline/CodeBuildActionRole/DefaultPolicy/Resource
-  PipelineUpdatePipelineSelfMutationRole57E559E8:
-    Type: AWS::IAM::Role
-    Properties:
-      AssumeRolePolicyDocument:
-        Statement:
-          - Action: sts:AssumeRole
-            Effect: Allow
-            Principal:
-              Service: codebuild.amazonaws.com
-        Version: "2012-10-17"
-    Metadata:
-      aws:cdk:path: CdkpipelinesStack/Pipeline/UpdatePipeline/SelfMutation/Role/Resource
-  PipelineUpdatePipelineSelfMutationRoleDefaultPolicyA225DA4E:
-    Type: AWS::IAM::Policy
-    Properties:
-      PolicyDocument:
-        Statement:
-          - Action:
-              - logs:CreateLogGroup
-              - logs:CreateLogStream
-              - logs:PutLogEvents
-            Effect: Allow
-            Resource:
-              - Fn::Join:
-                  - ""
-                  - - "arn:"
-                    - Ref: AWS::Partition
-                    - :logs:us-east-1:690901106489:log-group:/aws/codebuild/
-                    - Ref: PipelineUpdatePipelineSelfMutationDAA41400
-              - Fn::Join:
-                  - ""
-                  - - "arn:"
-                    - Ref: AWS::Partition
-                    - :logs:us-east-1:690901106489:log-group:/aws/codebuild/
-                    - Ref: PipelineUpdatePipelineSelfMutationDAA41400
-                    - :*
-          - Action:
-              - codebuild:CreateReportGroup
-              - codebuild:CreateReport
-              - codebuild:UpdateReport
-              - codebuild:BatchPutTestCases
-              - codebuild:BatchPutCodeCoverages
-            Effect: Allow
-            Resource:
-              Fn::Join:
-                - ""
-                - - "arn:"
-                  - Ref: AWS::Partition
-                  - :codebuild:us-east-1:690901106489:report-group/
-                  - Ref: PipelineUpdatePipelineSelfMutationDAA41400
-                  - -*
-          - Action: sts:AssumeRole
-            Condition:
-              ForAnyValue:StringEquals:
-                iam:ResourceTag/aws-cdk:bootstrap-role:
-                  - image-publishing
-                  - file-publishing
-                  - deploy
-            Effect: Allow
-            Resource: arn:*:iam::690901106489:role/*
-          - Action: cloudformation:DescribeStacks
-            Effect: Allow
-            Resource: "*"
-          - Action: s3:ListBucket
-            Effect: Allow
-            Resource: "*"
-          - Action:
-              - s3:GetObject*
-              - s3:GetBucket*
-              - s3:List*
-            Effect: Allow
-            Resource:
-              - Fn::GetAtt:
-                  - PipelineArtifactsBucketAEA9A052
-                  - Arn
-              - Fn::Join:
-                  - ""
-                  - - Fn::GetAtt:
-                        - PipelineArtifactsBucketAEA9A052
-                        - Arn
-                    - /*
-          - Action:
-              - kms:Decrypt
-              - kms:DescribeKey
-            Effect: Allow
-            Resource:
-              Fn::GetAtt:
-                - PipelineArtifactsBucketEncryptionKeyF5BF0670
-                - Arn
-          - Action:
-              - kms:Decrypt
-              - kms:Encrypt
-              - kms:ReEncrypt*
-              - kms:GenerateDataKey*
-            Effect: Allow
-            Resource:
-              Fn::GetAtt:
-                - PipelineArtifactsBucketEncryptionKeyF5BF0670
-                - Arn
-        Version: "2012-10-17"
-      PolicyName: PipelineUpdatePipelineSelfMutationRoleDefaultPolicyA225DA4E
-      Roles:
-        - Ref: PipelineUpdatePipelineSelfMutationRole57E559E8
-    Metadata:
-      aws:cdk:path: CdkpipelinesStack/Pipeline/UpdatePipeline/SelfMutation/Role/DefaultPolicy/Resource
-  PipelineUpdatePipelineSelfMutationDAA41400:
-    Type: AWS::CodeBuild::Project
-    Properties:
-      Artifacts:
-        Type: CODEPIPELINE
-      Environment:
-        ComputeType: BUILD_GENERAL1_SMALL
-        Image: aws/codebuild/standard:5.0
-        ImagePullCredentialsType: CODEBUILD
-        PrivilegedMode: false
-        Type: LINUX_CONTAINER
-      ServiceRole:
-        Fn::GetAtt:
-          - PipelineUpdatePipelineSelfMutationRole57E559E8
-          - Arn
-      Source:
-        BuildSpec: |-
-          {
-            "version": "0.2",
-            "phases": {
-              "install": {
-                "commands": [
-                  "npm install -g aws-cdk@1"
-                ]
-              },
-              "build": {
-                "commands": [
-                  "cdk -a . deploy CdkpipelinesStack --require-approval=never --verbose"
-                ]
-              }
-            }
-          }
-        Type: CODEPIPELINE
-      Cache:
-        Type: NO_CACHE
-      Description: Pipeline step CdkpipelinesStack/Pipeline/UpdatePipeline/SelfMutate
-      EncryptionKey:
-        Fn::GetAtt:
-          - PipelineArtifactsBucketEncryptionKeyF5BF0670
-          - Arn
-      Name: RDSSchemaMigrationDemo-selfupdate
-    Metadata:
-      aws:cdk:path: CdkpipelinesStack/Pipeline/UpdatePipeline/SelfMutation/Resource
   PipelineAssetsFileRole59943A77:
     Type: AWS::IAM::Role
     Properties:

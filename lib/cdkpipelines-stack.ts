@@ -1,6 +1,6 @@
 import { Construct, Stack, StackProps } from '@aws-cdk/core';
 import { CodePipeline, CodePipelineSource, CodeBuildStep, ManualApprovalStep } from "@aws-cdk/pipelines";
-import { PolicyStatement, Effect } from "@aws-cdk/aws-iam"
+import * as iam from "@aws-cdk/aws-iam"
 import { CdkpipelinesStage } from "./cdkpipelines-stage"
 
 /**
@@ -18,8 +18,7 @@ export class CdkpipelinesStack extends Stack {
     const input = CodePipelineSource.connection(
       `${config['githubOrg']}/${config['githubRepo']}`,
       config['githubBranch'],
-      { connectionArn }
-    )
+      { connectionArn })
 
     const pipeline = new CodePipeline(this, 'Pipeline', {
       pipelineName: 'RDSSchemaMigrationDemo',
@@ -41,13 +40,27 @@ export class CdkpipelinesStack extends Stack {
         ],
         buildEnvironment: {
           privileged: true // required for the lambda-nodejs module
-        }
+        },
+        rolePolicyStatements: [
+          new iam.PolicyStatement({
+            effect: iam.Effect.ALLOW,
+            actions: ['ec2:DescribeAvailabilityZones'],
+            resources: ['*']
+          })
+        ]
       })
     });
 
     // development stage
-    const dev = new CdkpipelinesStage(this, 'dev', false, accounts['CICD_ACCOUNT_ID'], {
-      env: { account: accounts['CICD_ACCOUNT_ID'], region: this.region }
+    const dev = new CdkpipelinesStage(
+      this,
+      'dev',
+      false,
+      accounts['CICD_ACCOUNT_ID'], {
+      env: {
+        account: accounts['CICD_ACCOUNT_ID'],
+        region: this.region
+      }
     });
 
     pipeline.addStage(dev, {
@@ -55,7 +68,11 @@ export class CdkpipelinesStack extends Stack {
     });
 
     // production stage
-    const prod = new CdkpipelinesStage(this, 'prod', true, accounts['CICD_ACCOUNT_ID'], {
+    const prod = new CdkpipelinesStage(
+      this,
+      'prod',
+      true,
+      accounts['CICD_ACCOUNT_ID'], {
       env: {
         account: accounts['PRD_ACCOUNT_ID'],
         region: this.region
@@ -76,8 +93,8 @@ export class CdkpipelinesStack extends Stack {
     const buildCommands: string[] = [];
 
     const rolePolicyStatements = [
-      new PolicyStatement({
-        effect: Effect.ALLOW,
+      new iam.PolicyStatement({
+        effect: iam.Effect.ALLOW,
         actions: ['lambda:InvokeFunction'],
         resources: [`arn:aws:lambda:${region}:${account}:function:${stage.lambdaFunctionName}`],
       })
@@ -93,11 +110,13 @@ export class CdkpipelinesStack extends Stack {
       )
 
       // allow to assume role if production environment
-      rolePolicyStatements.push(new PolicyStatement({
-        effect: Effect.ALLOW,
-        actions: ['sts:AssumeRole'],
-        resources: [`arn:aws:iam::${account}:role/${stage.crossAccountLambdaInvokeRoleName}`]
-      }))
+      rolePolicyStatements.push(
+        new iam.PolicyStatement({
+          effect: iam.Effect.ALLOW,
+          actions: ['sts:AssumeRole'],
+          resources: [`arn:aws:iam::${account}:role/${stage.crossAccountLambdaInvokeRoleName}`]
+        })
+      )
     }
 
     // invoke lambda in all environments

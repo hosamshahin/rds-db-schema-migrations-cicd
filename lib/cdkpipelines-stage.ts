@@ -9,15 +9,22 @@ export class PrimaryInfraStack extends Stack {
   public readonly lambdaFunctionName: string;
   public readonly crossAccountLambdaInvokeRoleName: string;
 
-  constructor(scope: Construct, id: string, crossAccount: boolean, stageName: string, devAccountId?: string, props?: StackProps) {
+  constructor(
+    scope: Construct,
+    id: string,
+    crossAccount: boolean,
+    stageName: string,
+    devAccountId?: string,
+    props?: StackProps
+  ) {
     super(scope, id, props);
     const database = new DatabaseStack(this, 'DatabaseConstruct', id)
     const service = new RdsDbSchemaMigrationsLambdaStack(
-      this, 
-      'WebServiceConstruct', 
-      database.secretName, 
-      database.secretArn, 
-      database.vpc, 
+      this,
+      'WebServiceConstruct',
+      database.secretName,
+      database.secretArn,
+      database.vpc,
       database.securityGroupOutput,
       database.defaultDBName,
       crossAccount,
@@ -36,7 +43,13 @@ export class CdkpipelinesStage extends Stage {
   public readonly lambdaFunctionName: string;
   public readonly crossAccountLambdaInvokeRoleName: string;
 
-  constructor(scope: Construct, id: string, crossAccount: boolean, devAccountId?: string, props?: StageProps) {
+  constructor(
+    scope: Construct,
+    id: string,
+    crossAccount: boolean,
+    devAccountId?: string,
+    props?: StageProps
+  ) {
     super(scope, id, props);
 
     const mainStack = new PrimaryInfraStack(this, 'PrimaryStack', crossAccount, id, devAccountId)

@@ -14,9 +14,14 @@ if [[ $# -ge 6 ]]; then
 
     export AWS_REGION=$REGION
 
-    npx cdk bootstrap  --profile $DEV_PROFILE --cloudformation-execution-policies arn:aws:iam::aws:policy/AdministratorAccess aws://$CDK_DEVELOPMENT_ACCOUNT/$REGION
+    npx cdk bootstrap  --profile $DEV_PROFILE \
+    --cloudformation-execution-policies arn:aws:iam::aws:policy/AdministratorAccess \
+    aws://$CDK_DEVELOPMENT_ACCOUNT/$REGION
 
-    npx cdk bootstrap --profile $PROD_PROFILE --trust $CDK_DEVELOPMENT_ACCOUNT --cloudformation-execution-policies arn:aws:iam::aws:policy/AdministratorAccess aws://$CDK_PRODUCTION_ACCOUNT/$REGION
+    npx cdk bootstrap --profile $PROD_PROFILE \
+    --trust $CDK_DEVELOPMENT_ACCOUNT \
+    --cloudformation-execution-policies arn:aws:iam::aws:policy/AdministratorAccess \
+    aws://$CDK_PRODUCTION_ACCOUNT/$REGION
 
     exit $?
 else
