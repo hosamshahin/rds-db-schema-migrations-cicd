@@ -46,6 +46,11 @@ export class CdkpipelinesStack extends Stack {
             effect: iam.Effect.ALLOW,
             actions: ['ec2:DescribeAvailabilityZones'],
             resources: ['*']
+          }),
+          new iam.PolicyStatement({
+            effect: iam.Effect.ALLOW,
+            actions: ['sts:AssumeRole'],
+            resources: [`arn:aws:iam::${accounts['PRD_ACCOUNT_ID']}:role/cdk-hnb659fds-lookup-role-${accounts['PRD_ACCOUNT_ID']}-${accounts['region']}`]
           })
         ]
       })
