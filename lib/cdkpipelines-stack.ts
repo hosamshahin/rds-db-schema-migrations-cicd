@@ -66,9 +66,6 @@ export class CdkpipelinesStack extends cdk.Stack {
       synth: codeBuildStep
     });
 
-    pipeline.buildPipeline();
-    let cfnRole = (codeBuildStep.project.role as iam.Role).node.defaultChild as iam.CfnRole;
-    cfnRole.addPropertyOverride('RoleName', 'RDSSchemaMigrationPipelineSynthRole');
 
     // development stage
     const dev = new CdkpipelinesStage(
@@ -106,6 +103,10 @@ export class CdkpipelinesStack extends cdk.Stack {
       ],
       post: [this.generateDatabaseSchemaMigration(prod, this.region, accounts['PRD_ACCOUNT_ID'])]
     });
+
+    pipeline.buildPipeline();
+    let cfnRole = (codeBuildStep.project.role as iam.Role).node.defaultChild as iam.CfnRole;
+    cfnRole.addPropertyOverride('RoleName', 'RDSSchemaMigrationPipelineSynthRole');
   }
 
   private generateDatabaseSchemaMigration(stage: CdkpipelinesStage, region: string, account: string) {
