@@ -1,11 +1,12 @@
-import { Construct, Stage, StageProps, Stack, StackProps } from '@aws-cdk/core';
-import { RdsDbSchemaMigrationsLambdaStack } from './lambda-stack';
+import * as cdk from 'aws-cdk-lib';
+import { Construct } from 'constructs';
+import { RdsDbSchemaMigrationsLambda } from './lambda-stack';
 import { DatabaseStack } from './database-stack';
 
 /**
  * Main stack to combine other nested stacks (CDK Constructs)
  */
-export class PrimaryInfraStack extends Stack {
+export class PrimaryInfraStack extends cdk.Stack {
   public readonly lambdaFunctionName: string;
   public readonly crossAccountLambdaInvokeRoleName: string;
 
@@ -15,22 +16,26 @@ export class PrimaryInfraStack extends Stack {
     crossAccount: boolean,
     stageName: string,
     devAccountId?: string,
-    props?: StackProps
+    props?: cdk.StackProps
   ) {
     super(scope, id, props);
     const database = new DatabaseStack(this, 'DatabaseConstruct', id)
-    const service = new RdsDbSchemaMigrationsLambdaStack(
+    const service = new RdsDbSchemaMigrationsLambda(
       this,
       'WebServiceConstruct',
-      database.secretName,
-      database.secretArn,
-      database.vpc,
-      database.securityGroupOutput,
-      database.defaultDBName,
-      crossAccount,
-      stageName,
-      devAccountId);
+      {
+        dbCredentialsSecretName: database.secretName,
+        dbCredentialsSecretArn: database.secretArn,
+        vpc: database.vpc,
+        securityGroup: database.securityGroupOutput,
+        defaultDBName: database.defaultDBName,
+        crossAccount,
+        stageName,
+        devAccountId
 
+      }
+
+    );
     this.lambdaFunctionName = service.lambdaFunctionName;
     this.crossAccountLambdaInvokeRoleName = service.crossAccountLambdaInvokeRoleName;
   }
@@ -39,7 +44,7 @@ export class PrimaryInfraStack extends Stack {
 /**
  * Deployable unit of web service app
  */
-export class CdkpipelinesStage extends Stage {
+export class CdkpipelinesStage extends cdk.Stage {
   public readonly lambdaFunctionName: string;
   public readonly crossAccountLambdaInvokeRoleName: string;
 
@@ -48,7 +53,7 @@ export class CdkpipelinesStage extends Stage {
     id: string,
     crossAccount: boolean,
     devAccountId?: string,
-    props?: StageProps
+    props?: cdk.StageProps
   ) {
     super(scope, id, props);
 

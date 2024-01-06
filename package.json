@@ -32,6 +32,8 @@
     "@aws-cdk/pipelines": "^1.125.0",
     "@types/aws-lambda": "^8.10.83",
     "lambda": "file:lib/lambda",
-    "source-map-support": "^0.5.16"
+    "source-map-support": "^0.5.16",
+    "aws-cdk-lib": "2.117.0",
+    "constructs": "^10.2.55"
   }
 }

@@ -1,15 +1,15 @@
-import { CfnOutput, Construct, Duration } from '@aws-cdk/core';
-
-import * as ec2 from '@aws-cdk/aws-ec2';
-import * as rds from '@aws-cdk/aws-rds';
+import * as cdk from 'aws-cdk-lib';
+import { Construct } from 'constructs';
+import * as ec2 from "aws-cdk-lib/aws-ec2";
+import * as rds from "aws-cdk-lib/aws-rds";
 
 /**
  * A stack for the RDS Database setup
  */
 export class DatabaseStack extends Construct {
   public readonly vpc: ec2.Vpc;
-  public readonly secretName: CfnOutput;
-  public readonly secretArn: CfnOutput;
+  public readonly secretName: cdk.CfnOutput;
+  public readonly secretArn: cdk.CfnOutput;
   public readonly securityGroupOutput: ec2.SecurityGroup;
   public readonly defaultDBName: string = "demo";
 
@@ -47,7 +47,7 @@ export class DatabaseStack extends Construct {
 
     // Configure automatic secrets rotation
     cluster.addRotationSingleUser({
-      automaticallyAfter: Duration.days(7),
+      automaticallyAfter: cdk.Duration.days(7),
       excludeCharacters: '!@#$%^&*',
     });
 
@@ -59,11 +59,11 @@ export class DatabaseStack extends Construct {
     }
 
     // Outputs
-    this.secretName = new CfnOutput(this, 'secretName', {
+    this.secretName = new cdk.CfnOutput(this, 'secretName', {
       value: cluster.secret?.secretName || '',
     });
 
-    this.secretArn = new CfnOutput(this, 'secretArn', {
+    this.secretArn = new cdk.CfnOutput(this, 'secretArn', {
       value: cluster.secret?.secretArn || '',
     });
 

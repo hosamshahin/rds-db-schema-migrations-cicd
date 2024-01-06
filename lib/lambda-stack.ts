@@ -1,38 +1,50 @@
-import { CfnOutput, Construct, Duration } from '@aws-cdk/core';
-import { NodejsFunction } from '@aws-cdk/aws-lambda-nodejs';
+import * as cdk from 'aws-cdk-lib';
+import { Construct } from 'constructs';
+import { NodejsFunction } from 'aws-cdk-lib/aws-lambda-nodejs';
 import * as path from 'path';
-import { AccountPrincipal, Effect, ManagedPolicy, PolicyDocument, PolicyStatement, Role, ServicePrincipal } from '@aws-cdk/aws-iam';
-import { SecurityGroup, Vpc } from '@aws-cdk/aws-ec2';
+import * as iam from "aws-cdk-lib/aws-iam";
+import * as ec2 from 'aws-cdk-lib/aws-ec2';
+
+export interface RdsDbSchemaMigrationsLambdaProps {
+  readonly dbCredentialsSecretName: cdk.CfnOutput,
+  readonly dbCredentialsSecretArn: cdk.CfnOutput,
+  readonly vpc: ec2.Vpc,
+  readonly securityGroup: ec2.SecurityGroup,
+  readonly defaultDBName: string,
+  readonly crossAccount: boolean,
+  readonly stageName: string,
+  readonly devAccountId?: string
+}
 
 /**
  * A stack for our simple Lambda-powered web service
  */
-export class RdsDbSchemaMigrationsLambdaStack extends Construct {
+export class RdsDbSchemaMigrationsLambda extends Construct {
   public readonly lambdaFunctionName: string;
   public readonly crossAccountLambdaInvokeRoleName: string = 'CrossAccountLambdaInvokeRole';
 
-  constructor(scope: Construct, id: string, dbCredentialsSecretName: CfnOutput, dbCredentialsSecretArn: CfnOutput, vpc: Vpc, securityGroup: SecurityGroup, defaultDBName: string, crossAccount: boolean, stageName: string, devAccountId?: string) {
+  constructor(scope: Construct,id: string, props: RdsDbSchemaMigrationsLambdaProps) {
     super(scope, id);
 
-    this.lambdaFunctionName = `RDSSchemaMigrationFunction-${stageName}`;
+    this.lambdaFunctionName = `RDSSchemaMigrationFunction-${props.stageName}`;
 
-    const lambdaRole = new Role(this, 'LambdaExecutionRole', {
-      assumedBy: new ServicePrincipal('lambda.amazonaws.com'),
+    const lambdaRole = new iam.Role(this, 'LambdaExecutionRole', {
+      assumedBy: new iam.ServicePrincipal('lambda.amazonaws.com'),
       managedPolicies: [
-        ManagedPolicy.fromManagedPolicyArn(this, 'LambdaBasicExecution', 'arn:aws:iam::aws:policy/service-role/AWSLambdaBasicExecutionRole'),
-        ManagedPolicy.fromManagedPolicyArn(this, 'LambdaVPCExecution', 'arn:aws:iam::aws:policy/service-role/AWSLambdaVPCAccessExecutionRole'),
+        iam.ManagedPolicy.fromManagedPolicyArn(this, 'LambdaBasicExecution', 'arn:aws:iam::aws:policy/service-role/AWSLambdaBasicExecutionRole'),
+        iam.ManagedPolicy.fromManagedPolicyArn(this, 'LambdaVPCExecution', 'arn:aws:iam::aws:policy/service-role/AWSLambdaVPCAccessExecutionRole'),
       ],
       inlinePolicies: {
-        secretsManagerPermissions: new PolicyDocument({
+        secretsManagerPermissions: new iam.PolicyDocument({
           statements: [
-            new PolicyStatement({
-              effect: Effect.ALLOW,
+            new iam.PolicyStatement({
+              effect: iam.Effect.ALLOW,
               actions: [
                 'secretsmanager:GetSecretValue',
                 'kms:Decrypt',
               ],
               resources: [
-                dbCredentialsSecretArn.value
+                props.dbCredentialsSecretArn.value
               ]
             }),
           ]
@@ -45,7 +57,7 @@ export class RdsDbSchemaMigrationsLambdaStack extends Construct {
       functionName: this.lambdaFunctionName,
       handler: 'handler',
       entry: path.resolve(__dirname, 'lambda/handler.ts'),
-      timeout: Duration.minutes(10),
+      timeout: cdk.Duration.minutes(10),
       bundling: {
         externalModules: [
           'aws-sdk'
@@ -69,30 +81,28 @@ export class RdsDbSchemaMigrationsLambdaStack extends Construct {
       depsLockFilePath: path.resolve(__dirname, 'lambda', 'package-lock.json'),
       projectRoot: path.resolve(__dirname, 'lambda'),
       environment: {
-        RDS_DB_PASS_SECRET_ID: dbCredentialsSecretName.value,
-        RDS_DB_NAME: defaultDBName
+        RDS_DB_PASS_SECRET_ID: props.dbCredentialsSecretName.value,
+        RDS_DB_NAME: props.defaultDBName
       },
-      vpc: vpc,
+      vpc: props.vpc,
       role: lambdaRole,
-      securityGroups: [
-        securityGroup
-      ]
+      securityGroups: [props.securityGroup]
     })
 
-    if (crossAccount) {
-      new Role(this, 'CrossAccountLambdaInvokeRole', {
+    if (props.crossAccount) {
+      new iam.Role(this, 'CrossAccountLambdaInvokeRole', {
         roleName: this.crossAccountLambdaInvokeRoleName,
-        assumedBy: new AccountPrincipal(devAccountId),
+        assumedBy: new iam.AccountPrincipal(props.devAccountId),
         inlinePolicies: {
-          invokeLambdaPermissions: new PolicyDocument({
+          invokeLambdaPermissions: new iam.PolicyDocument({
             statements: [
-              new PolicyStatement({
-                effect: Effect.ALLOW,
+              new iam.PolicyStatement({
+                effect: iam.Effect.ALLOW,
                 actions: ['iam:PassRole'],
                 resources: ['*']
               }),
-              new PolicyStatement({
-                effect: Effect.ALLOW,
+              new iam.PolicyStatement({
+                effect: iam.Effect.ALLOW,
                 actions: ['lambda:InvokeFunction'],
                 resources: [func.functionArn],
               }),

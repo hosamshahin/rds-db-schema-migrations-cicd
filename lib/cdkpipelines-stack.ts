@@ -1,14 +1,15 @@
-import { Construct, Stack, StackProps } from '@aws-cdk/core';
-import { CodePipeline, CodePipelineSource, CodeBuildStep, ManualApprovalStep } from "@aws-cdk/pipelines";
-import * as iam from "@aws-cdk/aws-iam"
+import * as cdk from 'aws-cdk-lib';
+import { Construct } from 'constructs';
+import { CodePipeline, CodePipelineSource, ShellStep, ManualApprovalStep, CodeBuildStep } from 'aws-cdk-lib/pipelines';
+import * as iam from "aws-cdk-lib/aws-iam";
 import { CdkpipelinesStage } from "./cdkpipelines-stage"
 
 /**
  * The stack that defines the application pipeline
  */
-export class CdkpipelinesStack extends Stack {
+export class CdkpipelinesStack extends cdk.Stack {
 
-  constructor(scope: Construct, id: string, props?: StackProps) {
+  constructor(scope: Construct, id: string, props?: cdk.StackProps) {
     super(scope, id, props);
 
     const config = this.node.tryGetContext("config")
