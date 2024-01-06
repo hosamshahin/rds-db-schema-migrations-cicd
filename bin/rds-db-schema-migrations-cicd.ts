@@ -1,6 +1,7 @@
 #!/usr/bin/env node
 import { CdkpipelinesStack } from '../lib/cdkpipelines-stack';
 import { BootstrapAdminRole } from '../lib/bootstrap-cross-account-admin-role';
+import { Database } from '../lib/database-construct';
 import * as cdk from 'aws-cdk-lib';
 
 const app = new cdk.App();
@@ -18,6 +19,11 @@ if (targetStack == 'CdkpipelinesStack') {
 
 if (targetStack == 'BootstrapAdminRole') {
   new BootstrapAdminRole(app, 'BootstrapAdminRole', { env })
+}
+
+if (targetStack == 'DatabaseStack') {
+  const databaseStack = new cdk.Stack(app, 'DatabaseStack', { env });
+  new Database(databaseStack, 'Database', 'dev')
 }
 
 app.synth();
