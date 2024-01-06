@@ -32,15 +32,14 @@ export class DatabaseStack extends Construct {
     const cluster = new rds.ServerlessCluster(this, 'DBCluster', {
       engine: rds.DatabaseClusterEngine.AURORA_POSTGRESQL,
       vpc: this.vpc,
-      parameterGroup: rds.ParameterGroup.fromParameterGroupName(this, 'ParameterGroup', 'default.aurora-postgresql10'),
       enableDataApi: true,
       securityGroups: [
         securityGroup
       ],
       defaultDatabaseName: this.defaultDBName,
       scaling: {
-        minCapacity: rds.AuroraCapacityUnit.ACU_2,
-        maxCapacity: rds.AuroraCapacityUnit.ACU_4
+        minCapacity: rds.AuroraCapacityUnit.ACU_1,
+        maxCapacity: rds.AuroraCapacityUnit.ACU_2
       },
       credentials: rds.Credentials.fromGeneratedSecret('syscdk'),
     });
