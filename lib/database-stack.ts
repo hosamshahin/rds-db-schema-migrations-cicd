@@ -29,21 +29,29 @@ export class DatabaseStack extends Construct {
     securityGroup.addIngressRule(ec2.Peer.ipv4(this.vpc.vpcCidrBlock), ec2.Port.tcp(5432), 'Allow Postgres Communication')
 
     // Database cluster
-    const cluster = new rds.ServerlessCluster(this, 'DBCluster', {
-      engine: rds.DatabaseClusterEngine.AURORA_POSTGRESQL,
+    const AURORA_POSTGRES_ENGINE_VERSION = rds.AuroraPostgresEngineVersion.VER_15_4
+    const RDS_MAJOR_VERSION = AURORA_POSTGRES_ENGINE_VERSION.auroraPostgresMajorVersion.split('.')[0]
+
+    const parameterGroup = rds.ParameterGroup.fromParameterGroupName(
+      this,
+      `ParameterGroup`,
+      `default.aurora-postgresql${RDS_MAJOR_VERSION}`,
+    )
+
+    const cluster = new rds.ServerlessCluster(scope, `DBCluster`, {
+      engine: rds.DatabaseClusterEngine.auroraPostgres({
+        version: AURORA_POSTGRES_ENGINE_VERSION,
+      }),
       vpc: this.vpc,
-      parameterGroup: rds.ParameterGroup.fromParameterGroupName(this, 'ParameterGroup', 'default.aurora-postgresql15'),
-      enableDataApi: true,
-      securityGroups: [
-        securityGroup
-      ],
+      parameterGroup,
       defaultDatabaseName: this.defaultDBName,
       scaling: {
         minCapacity: rds.AuroraCapacityUnit.ACU_2,
         maxCapacity: rds.AuroraCapacityUnit.ACU_4
       },
+      securityGroups: [securityGroup],
       credentials: rds.Credentials.fromGeneratedSecret('syscdk'),
-    });
+    })
 
     // Configure automatic secrets rotation
     // cluster.addRotationSingleUser({
