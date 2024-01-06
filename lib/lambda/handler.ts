@@ -1,11 +1,10 @@
 'use strict'
 
-import { Context } from "aws-lambda"
 import { KnexClient } from "./knex-client"
 
 const knexClient = new KnexClient()
 
-export async function handler(event: any, context: Context): Promise<any> {
+export async function handler(event: any): Promise<any> {
   console.info("EVENT\n" + JSON.stringify(event, null, 2))
   try {
     await knexClient.dbSetup()
