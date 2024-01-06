@@ -50,7 +50,7 @@ export class CdkpipelinesStack extends Stack {
           new iam.PolicyStatement({
             effect: iam.Effect.ALLOW,
             actions: ['sts:AssumeRole'],
-            resources: [`arn:aws:iam::${accounts['PRD_ACCOUNT_ID']}:role/cdk-hnb659fds-lookup-role-${accounts['PRD_ACCOUNT_ID']}-${accounts['region']}`]
+            resources: [`arn:aws:iam::${accounts['PRD_ACCOUNT_ID']}:role/cdk-hnb659fds-lookup-role-${accounts['PRD_ACCOUNT_ID']}-${config['region']}`]
           })
         ]
       })

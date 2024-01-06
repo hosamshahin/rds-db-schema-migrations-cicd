@@ -584,6 +584,9 @@ Resources:
           - Action: ec2:DescribeAvailabilityZones
             Effect: Allow
             Resource: "*"
+          - Action: sts:AssumeRole
+            Effect: Allow
+            Resource: arn:aws:iam::938711853848:role/cdk-hnb659fds-lookup-role-938711853848-us-east-1
           - Action:
               - s3:GetObject*
               - s3:GetBucket*
