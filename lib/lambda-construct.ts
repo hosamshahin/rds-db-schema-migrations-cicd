@@ -23,7 +23,7 @@ export class RdsDbSchemaMigrationsLambda extends Construct {
   public readonly lambdaFunctionName: string;
   public readonly crossAccountLambdaInvokeRoleName: string = 'CrossAccountLambdaInvokeRole';
 
-  constructor(scope: Construct,id: string, props: RdsDbSchemaMigrationsLambdaProps) {
+  constructor(scope: Construct, id: string, props: RdsDbSchemaMigrationsLambdaProps) {
     super(scope, id);
 
     this.lambdaFunctionName = `RDSSchemaMigrationFunction-${props.stageName}`;

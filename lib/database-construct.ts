@@ -4,6 +4,8 @@ import * as ec2 from "aws-cdk-lib/aws-ec2";
 import * as rds from "aws-cdk-lib/aws-rds";
 import * as sm from "aws-cdk-lib/aws-secretsmanager";
 
+
+
 export class Database extends Construct {
   public readonly vpc: ec2.Vpc;
   public readonly secretName: cdk.CfnOutput;

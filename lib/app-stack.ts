@@ -3,22 +3,13 @@ import { Construct } from 'constructs';
 import { RdsDbSchemaMigrationsLambda } from './lambda-construct';
 import { Database } from './database-construct';
 
-/**
- * Main stack to combine other nested stacks (CDK Constructs)
- */
-export class InfraStack extends cdk.Stack {
+class AppStack extends cdk.Stack {
   public readonly lambdaFunctionName: string;
   public readonly crossAccountLambdaInvokeRoleName: string;
 
-  constructor(
-    scope: Construct,
-    id: string,
-    crossAccount: boolean,
-    stageName: string,
-    devAccountId?: string,
-    props?: cdk.StackProps
-  ) {
+  constructor(scope: Construct, id: string, crossAccount: boolean, devAccountId?: string, props?: cdk.StackProps) {
     super(scope, id, props);
+
     const database = new Database(this, 'Database', id)
     const service = new RdsDbSchemaMigrationsLambda(this, 'WebService', {
       dbCredentialsSecretName: database.secretName,
@@ -27,7 +18,7 @@ export class InfraStack extends cdk.Stack {
       securityGroup: database.securityGroup,
       defaultDBName: database.defaultDBName,
       crossAccount,
-      stageName,
+      stageName: id,
       devAccountId
     });
 
@@ -36,19 +27,16 @@ export class InfraStack extends cdk.Stack {
   }
 }
 
-/**
- * Deployable unit of web service app
- */
-export class CdkpipelinesStage extends cdk.Stage {
+export class AppStage extends cdk.Stage {
   public readonly lambdaFunctionName: string;
   public readonly crossAccountLambdaInvokeRoleName: string;
 
   constructor(scope: Construct, id: string, crossAccount: boolean, devAccountId?: string, props?: cdk.StageProps) {
     super(scope, id, props);
 
-    const mainStack = new InfraStack(this, 'PrimaryStack', crossAccount, id, devAccountId)
+    const appStack = new AppStack(this, 'AppStack', crossAccount, devAccountId, props);
 
-    this.lambdaFunctionName = mainStack.lambdaFunctionName;
-    this.crossAccountLambdaInvokeRoleName = mainStack.crossAccountLambdaInvokeRoleName;
+    this.lambdaFunctionName = appStack.lambdaFunctionName;
+    this.crossAccountLambdaInvokeRoleName = appStack.crossAccountLambdaInvokeRoleName;
   }
 }
