@@ -19,8 +19,7 @@ export class CdkpipelinesStack extends cdk.Stack {
     const input = CodePipelineSource.connection(
       `${config['githubOrg']}/${config['githubRepo']}`,
       config['githubBranch'],
-      { connectionArn }
-    )
+      { connectionArn })
 
     const synthStep = new CodeBuildStep('Synth', {
       input,
@@ -93,7 +92,7 @@ export class CdkpipelinesStack extends cdk.Stack {
 
     pipeline.buildPipeline();
     let cfnRole = (synthStep.project.role as iam.Role).node.defaultChild as iam.CfnRole;
-    cfnRole.addPropertyOverride('RoleName', 'RDSSchemaMigrationPipelineSynthRole');
+    cfnRole.addPropertyOverride('RoleName', config['resourceAttr']['schemaMigrationCodeBuildStepRole']);
   }
 
   private generateDatabaseSchemaMigration(account: string) {

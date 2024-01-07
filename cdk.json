@@ -17,7 +17,8 @@
       "resourceAttr":{
         "defaultDBName": "postgres",
         "crossAccountLambdaRole": "crossAccountLambdaRole",
-        "schemaMigrationFnName": "RDSSchemaMigrationFunction"
+        "schemaMigrationFnName": "RDSSchemaMigrationFunction",
+        "schemaMigrationCodeBuildStepRole": "schemaMigrationCodeBuildStepRole"
       }
     }
   }
