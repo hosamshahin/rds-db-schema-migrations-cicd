@@ -59,7 +59,6 @@ export class CdkpipelinesStack extends cdk.Stack {
     const pipeline = new CodePipeline(this, 'Pipeline', {
       pipelineName: 'RDSSchemaMigrationDemo',
       crossAccountKeys: true,
-      selfMutation: false,
       synth: codeBuildStep
     });
 
