@@ -41,11 +41,15 @@ export class CdkpipelinesStack extends cdk.Stack {
         new iam.PolicyStatement({
           effect: iam.Effect.ALLOW,
           actions: ['sts:AssumeRole'],
-          resources: [`arn:aws:iam::${accounts['PRD_ACCOUNT_ID']}:role/cdk-hnb659fds-lookup-role-${accounts['PRD_ACCOUNT_ID']}-${config['region']}`]
+          resources: [
+            `arn:aws:iam::${accounts['DEV_ACCOUNT_ID']}:role/cdk-hnb659fds-lookup-role-${accounts['DEV_ACCOUNT_ID']}-${config['region']}`,
+            `arn:aws:iam::${accounts['PRD_ACCOUNT_ID']}:role/cdk-hnb659fds-lookup-role-${accounts['PRD_ACCOUNT_ID']}-${config['region']}`
+          ]
         }),
         new iam.PolicyStatement({
           actions: ['sts:AssumeRole'],
           resources: [
+            `arn:aws:iam::${accounts['DEV_ACCOUNT_ID']}:role/admin-role-from-cicd-account`,
             `arn:aws:iam::${accounts['PRD_ACCOUNT_ID']}:role/admin-role-from-cicd-account`
           ],
         }),

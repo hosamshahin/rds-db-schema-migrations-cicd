@@ -23,7 +23,7 @@ export class AppStage extends cdk.Stage {
   constructor(scope: Construct, id: string, props?: cdk.StageProps) {
     super(scope, id, props);
 
-    const appStack = new AppStack(this, 'AppStack');
+    const appStack = new AppStack(this, 'AppStack', props);
 
     this.lambdaFunctionName = appStack.lambdaFunctionName;
     this.crossAccountLambdaInvokeRoleName = appStack.crossAccountLambdaInvokeRoleName;
