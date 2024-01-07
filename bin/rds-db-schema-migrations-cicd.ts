@@ -2,7 +2,6 @@
 import { CdkpipelinesStack } from '../lib/cdkpipelines-stack';
 import { BootstrapAdminRole } from '../lib/bootstrap-cross-account-admin-role';
 import { Database } from '../lib/database-construct';
-import { RdsDbSchemaMigrationsLambda } from '../lib/lambda-construct';
 import * as cdk from 'aws-cdk-lib';
 
 const app = new cdk.App();
@@ -27,17 +26,7 @@ if (targetStack == 'BootstrapAdminRole') {
 
 if (targetStack == 'DatabaseStack') {
   const stack = new cdk.Stack(app, 'DatabaseStack', { env });
-  const database = new Database(stack, 'Database', 'dev')
-  new RdsDbSchemaMigrationsLambda(stack, 'Lambda', {
-    dbCredentialsSecretName: database.secretName,
-    dbCredentialsSecretArn: database.secretArn,
-    vpc: database.vpc,
-    securityGroup: database.securityGroup,
-    defaultDBName: database.defaultDBName,
-    crossAccount:false,
-    devAccountId: accounts['CICD_ACCOUNT_ID'],
-    stageName: 'dev'
-  })
+  const database = new Database(stack, 'Database', {stageName: 'cicd'})
 }
 
 app.synth();
