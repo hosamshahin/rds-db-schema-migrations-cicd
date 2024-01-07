@@ -6,7 +6,9 @@ import { SecretsManager } from 'aws-sdk';
 
 const RDS_DB_PASS_SECRET_ID = process.env.RDS_DB_PASS_SECRET_ID || ''
 const RDS_DB_NAME = process.env.RDS_DB_NAME || ''
-const RDS_DB_SCHEMA = process.env.RDS_DB_SCHEMA || ''
+const RDS_DB_SCHEMA = process.env.RDS_DB_SCHEMA || 'schema'
+const ENDPOINT = process.env.ENDPOINT || ''
+const PORT = process.env.PORT || ''
 
 const secretsManagerClient = new SecretsManager()
 
@@ -30,8 +32,8 @@ export class KnexClient {
   async getConnection(secretId: string, dbName: string) {
     const dbSecret = JSON.parse(await this.getSecretValue(secretId) || '');
     const config = {
-      host: dbSecret.host,
-      port: dbSecret.port,
+      host: ENDPOINT,
+      port: PORT,
       user: dbSecret.username,
       password: dbSecret.password,
       database: dbName,

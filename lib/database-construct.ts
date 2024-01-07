@@ -7,34 +7,28 @@ import * as iam from "aws-cdk-lib/aws-iam";
 import { NodejsFunction } from 'aws-cdk-lib/aws-lambda-nodejs';
 import { Construct } from 'constructs';
 
-export interface DatabaseProps {
-  readonly stageName: string,
-}
-
 export class Database extends Construct {
-  public readonly vpc: ec2.Vpc;
-  public readonly secretName: cdk.CfnOutput;
-  public readonly secretArn: cdk.CfnOutput;
-  public readonly securityGroup: ec2.SecurityGroup;
-  public readonly defaultDBName: string = "postgres";
-  public readonly lambdaFunctionName: string;
-  public readonly crossAccountLambdaInvokeRoleName: string = 'CrossAccountLambdaInvokeRole';
-
-  constructor(scope: Construct, id: string, props: DatabaseProps) {
+  constructor(scope: Construct, id: string) {
     super(scope, id);
 
+    const currentAcct = cdk.Stack.of(this).account
     const config = this.node.tryGetContext("config")
     const accounts = config['accounts']
+    const envName = currentAcct == accounts['DEV_ACCOUNT_ID'] ? 'dev' : 'prd'
+    const defaultDBName = config['resourceAttr']['defaultDBName']
 
-    this.vpc = new ec2.Vpc(this, 'RdsVpc');
+    const vpc = new ec2.Vpc(this, 'RdsVpc', {
+      maxAzs: 2,
+      natGateways: 0
+    });
 
-    this.securityGroup = new ec2.SecurityGroup(this, 'LambdaPostgresConnectionSG', {
-      vpc: this.vpc,
+    const securityGroup = new ec2.SecurityGroup(this, 'LambdaPostgresConnectionSG', {
+      vpc,
       description: "Lambda security group to connect to Postgres db.",
       allowAllOutbound: true
     })
 
-    this.securityGroup.addIngressRule(ec2.Peer.ipv4(this.vpc.vpcCidrBlock), ec2.Port.tcp(5432), 'Allow Postgres Communication')
+    securityGroup.addIngressRule(ec2.Peer.ipv4(vpc.vpcCidrBlock), ec2.Port.tcp(5432), 'Allow Postgres Communication')
 
     const secret = new sm.Secret(this, 'Secret', {
       generateSecretString: {
@@ -44,29 +38,21 @@ export class Database extends Construct {
       },
     });
 
-    new rds.DatabaseInstance(this, "PostgresInstance", {
+    const database = new rds.DatabaseInstance(this, "PostgresInstance", {
       engine: rds.DatabaseInstanceEngine.POSTGRES,
       instanceType: ec2.InstanceType.of(ec2.InstanceClass.T3, ec2.InstanceSize.MICRO),
       credentials: {
         username: secret.secretValueFromJson('username').toString(),
         password: secret.secretValueFromJson('password')
       },
-      vpc: this.vpc,
-      publiclyAccessible: props.stageName === 'dev' ? true : false,
-      securityGroups: [this.securityGroup],
-      databaseName: this.defaultDBName
+      vpc,
+      publiclyAccessible: currentAcct == accounts['DEV_ACCOUNT_ID'] ? true : false,
+      securityGroups: [securityGroup],
+      databaseName: defaultDBName,
+      vpcSubnets: {
+        subnetType: currentAcct == accounts['DEV_ACCOUNT_ID'] ? ec2.SubnetType.PUBLIC : ec2.SubnetType.PRIVATE_ISOLATED
+      }
     });
-
-    // Outputs
-    this.secretName = new cdk.CfnOutput(this, 'secretName', {
-      value: secret.secretName
-    });
-
-    this.secretArn = new cdk.CfnOutput(this, 'secretArn', {
-      value: secret.secretArn
-    });
-
-    this.lambdaFunctionName = `RDSSchemaMigrationFunction-${props.stageName}`;
 
     const lambdaRole = new iam.Role(this, 'LambdaExecutionRole', {
       assumedBy: new iam.ServicePrincipal('lambda.amazonaws.com'),
@@ -84,7 +70,7 @@ export class Database extends Construct {
                 'kms:Decrypt',
               ],
               resources: [
-                this.secretArn.value
+                secret.secretArn
               ]
             }),
           ]
@@ -94,7 +80,7 @@ export class Database extends Construct {
 
     // The Lambda function that contains the functionality
     const func = new NodejsFunction(this, 'Lambda', {
-      functionName: this.lambdaFunctionName,
+      functionName: `${config['resourceAttr']['schemaMigrationFnName']}-${envName}`,
       handler: 'handler',
       entry: path.resolve(__dirname, 'lambda/handler.ts'),
       timeout: cdk.Duration.minutes(10),
@@ -121,16 +107,18 @@ export class Database extends Construct {
       depsLockFilePath: path.resolve(__dirname, 'lambda', 'package-lock.json'),
       projectRoot: path.resolve(__dirname, 'lambda'),
       environment: {
-        RDS_DB_PASS_SECRET_ID: this.secretName.value,
-        RDS_DB_NAME: this.defaultDBName
+        RDS_DB_PASS_SECRET_ID: secret.secretName,
+        RDS_DB_NAME: defaultDBName,
+        ENDPOINT: database.dbInstanceEndpointAddress,
+        PORT: database.dbInstanceEndpointPort,
       },
-      vpc: this.vpc,
+      vpc,
       role: lambdaRole,
-      securityGroups: [this.securityGroup]
+      securityGroups: [securityGroup]
     })
 
-    new iam.Role(this, 'CrossAccountLambdaInvokeRole', {
-      roleName: this.crossAccountLambdaInvokeRoleName,
+    new iam.Role(this, 'CrossAccountLambdaRole', {
+      roleName: config['resourceAttr']['crossAccountLambdaRole'],
       assumedBy: new iam.AccountPrincipal(accounts['CICD_ACCOUNT_ID']),
       inlinePolicies: {
         invokeLambdaPermissions: new iam.PolicyDocument({
@@ -149,6 +137,16 @@ export class Database extends Construct {
         })
       }
     })
+
+    // Outputs
+    new cdk.CfnOutput(this, 'secretName', {
+      value: secret.secretName
+    });
+
+    new cdk.CfnOutput(this, 'secretArn', {
+      value: secret.secretArn
+    });
+
   }
 }
 

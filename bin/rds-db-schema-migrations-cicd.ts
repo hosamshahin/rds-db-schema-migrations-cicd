@@ -26,7 +26,7 @@ if (targetStack == 'BootstrapAdminRole') {
 
 if (targetStack == 'DatabaseStack') {
   const stack = new cdk.Stack(app, 'DatabaseStack', { env });
-  const database = new Database(stack, 'Database', {stageName: 'cicd'})
+  const database = new Database(stack, 'Database')
 }
 
 app.synth();
