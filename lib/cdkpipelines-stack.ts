@@ -22,7 +22,7 @@ export class CdkpipelinesStack extends cdk.Stack {
       { connectionArn }
     )
 
-    const codeBuildStep = new CodeBuildStep('Synth', {
+    const synthStep = new CodeBuildStep('Synth', {
       input,
       commands: [
         'npm ci',
@@ -59,39 +59,24 @@ export class CdkpipelinesStack extends cdk.Stack {
     const pipeline = new CodePipeline(this, 'Pipeline', {
       pipelineName: 'RDSSchemaMigrationDemo',
       crossAccountKeys: true,
-      synth: codeBuildStep
+      synth: synthStep
     });
 
-    const prod = new AppStage(this, 'prod', {
+    const stage = new AppStage(this, 'prod', {
       env: {
         account: accounts['PRD_ACCOUNT_ID'],
         region: this.region
       }
     });
 
-    pipeline.addStage(prod);
+    // pipeline.addStage(stage);
 
-    // pipeline.addStage(prod, {
-    //   pre: [
-    //     new ManualApprovalStep('ManualApproval', {
-    //       comment: "Approve deployment to production"
-    //     })
-    //   ],
-    //   post: [this.generateDatabaseSchemaMigration(prod, this.region, accounts['PRD_ACCOUNT_ID'])]
-    // });
-
-    pipeline.buildPipeline();
-    let cfnRole = (codeBuildStep.project.role as iam.Role).node.defaultChild as iam.CfnRole;
-    cfnRole.addPropertyOverride('RoleName', 'RDSSchemaMigrationPipelineSynthRole');
-  }
-
-  private generateDatabaseSchemaMigration(stage: AppStage, region: string, account: string) {
-    return new CodeBuildStep(`RDSSchemaUpdate-${stage.stageName}`, {
+    const schemaUpdateStep = new CodeBuildStep(`RDSSchemaUpdate-${stage.stageName}`, {
       env: {
         DB_MIGRATE_FUNCTION_NAME: stage.lambdaFunctionName,
       },
       commands: [
-        `aws sts assume-role --role-arn arn:aws:iam::${account}:role/${stage.crossAccountLambdaInvokeRoleName} --role-session-name "CrossAccountSession" > credentials.json`,
+        `aws sts assume-role --role-arn arn:aws:iam::${accounts['PRD_ACCOUNT_ID']}:role/${stage.crossAccountLambdaInvokeRoleName} --role-session-name "CrossAccountSession" > credentials.json`,
         'export AWS_ACCESS_KEY_ID=$(cat credentials.json | jq -r ".Credentials.AccessKeyId")',
         'export AWS_SECRET_ACCESS_KEY=$(cat credentials.json | jq -r ".Credentials.SecretAccessKey")',
         'export AWS_SESSION_TOKEN=$(cat credentials.json | jq -r ".Credentials.SessionToken")',
@@ -103,14 +88,28 @@ export class CdkpipelinesStack extends cdk.Stack {
         new iam.PolicyStatement({
           effect: iam.Effect.ALLOW,
           actions: ['lambda:InvokeFunction'],
-          resources: [`arn:aws:lambda:${region}:${account}:function:${stage.lambdaFunctionName}`],
+          resources: [`arn:aws:lambda:${this.region}:${accounts['PRD_ACCOUNT_ID']}:function:${stage.lambdaFunctionName}`],
         }),
         new iam.PolicyStatement({
           effect: iam.Effect.ALLOW,
           actions: ['sts:AssumeRole'],
-          resources: [`arn:aws:iam::${account}:role/${stage.crossAccountLambdaInvokeRoleName}`]
+          resources: [`arn:aws:iam::${accounts['PRD_ACCOUNT_ID']}:role/${stage.crossAccountLambdaInvokeRoleName}`]
         })
       ]
     })
+
+    pipeline.addStage(stage, {
+      pre: [
+        new ManualApprovalStep('ManualApproval', {
+          comment: "Approve deployment to production"
+        })
+      ],
+      post: [schemaUpdateStep]
+    });
+
+    pipeline.buildPipeline();
+    let cfnRole = (synthStep.project.role as iam.Role).node.defaultChild as iam.CfnRole;
+    cfnRole.addPropertyOverride('RoleName', 'RDSSchemaMigrationPipelineSynthRole');
   }
+
 }
