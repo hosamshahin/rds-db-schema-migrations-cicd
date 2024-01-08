@@ -22,6 +22,7 @@ export class Database extends Construct {
       natGateways: 0
     });
 
+
     const securityGroup = new ec2.SecurityGroup(this, 'LambdaPostgresConnectionSG', {
       vpc,
       description: "Lambda security group to connect to Postgres db.",
@@ -29,6 +30,13 @@ export class Database extends Construct {
     })
 
     securityGroup.addIngressRule(ec2.Peer.ipv4(vpc.vpcCidrBlock), ec2.Port.tcp(5432), 'Allow Postgres Communication')
+
+    new ec2.InterfaceVpcEndpoint(this, 'SecretsManagerEndpoint', {
+      service: ec2.InterfaceVpcEndpointAwsService.SECRETS_MANAGER,
+      vpc,
+      privateDnsEnabled: true,
+      securityGroups: [securityGroup],
+    });
 
     const secret = new sm.Secret(this, 'Secret', {
       generateSecretString: {
@@ -66,6 +74,8 @@ export class Database extends Construct {
             new iam.PolicyStatement({
               effect: iam.Effect.ALLOW,
               actions: [
+                'secretsmanager:DescribeSecret',
+                'secretsmanager:ListSecrets',
                 'secretsmanager:GetSecretValue',
                 'kms:Decrypt',
               ],
